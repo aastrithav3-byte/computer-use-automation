@@ -16,12 +16,14 @@ async def main():
     ) as file:
         artifact = json.load(file)
 
-    # Test valid member + invalid account type
-    # Maya Patel exists, but Credit Card does not
+    # Test successful account balance replay
+    # Maya Patel - Checking account
     inputs = {
         "member_id": "12345",
-        "account_type": "Credit Card",
+        "account_type": "Checkings",
     }
+
+    
 
     print("\nINPUTS USED FOR REPLAY:")
     print(inputs)
