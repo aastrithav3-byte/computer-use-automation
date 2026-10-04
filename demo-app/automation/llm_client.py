@@ -81,7 +81,7 @@ Examples:
 """
 
         response = self.client.responses.create(
-            model="gpt-5.6-luna",
+            model="gpt-6-luna",
             input=prompt,
         )
 
