@@ -20,7 +20,7 @@ async def main():
     # Maya Patel - Checking account
     inputs = {
         "member_id": "12345",
-        "account_type": "Checkings",
+        "account_type": "Checking",
     }
 
     
