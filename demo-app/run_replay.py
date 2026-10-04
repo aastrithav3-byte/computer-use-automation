@@ -16,11 +16,11 @@ async def main():
     ) as file:
         artifact = json.load(file)
 
-    # Test successful account balance replay
-    # Maya Patel - Checking account
+    # Test valid member + invalid account type
+    # Maya Patel exists, but Credit Card does not
     inputs = {
         "member_id": "12345",
-        "account_type": "Checking",
+        "account_type": "Credit Card",
     }
 
     print("\nINPUTS USED FOR REPLAY:")
@@ -36,10 +36,10 @@ async def main():
             headless=False
         )
 
-        # Create a new browser page
+        # Create browser page
         page = await browser.new_page()
 
-        # Create the replay engine
+        # Create replay engine
         engine = ReplayEngine(page)
 
         # Execute the discovered capability
@@ -51,7 +51,7 @@ async def main():
         print("\nREPLAY RESULT:")
         print(result)
 
-        # Keep browser open so we can inspect the final page
+        # Keep browser open so we can inspect the result
         input("\nPress Enter to close the browser...")
 
         await browser.close()

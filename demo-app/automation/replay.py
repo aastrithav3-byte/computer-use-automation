@@ -104,7 +104,33 @@ class ReplayEngine:
                     )
 
                 elif action == "click":
-                    await self.surface.click_text(target)
+                    clicked = await self.surface.click_text(
+                        target
+                    )
+
+                    # The requested account type does not
+                    # exist for this member.
+                    if not clicked:
+                        if target == inputs.get(
+                            "account_type"
+                        ):
+                            return {
+                                "status": "business_outcome",
+                                "code": "ACCOUNT_NOT_FOUND",
+                                "step": step_number,
+                                "outputs": outputs,
+                            }
+
+                        # Any other missing click target
+                        # represents an automation failure.
+                        return {
+                            "status": "failure",
+                            "reason": "target_not_found",
+                            "step": step_number,
+                            "action": action,
+                            "target": target,
+                            "outputs": outputs,
+                        }
 
                 elif action == "read":
                     page_text = (
@@ -125,7 +151,8 @@ class ReplayEngine:
                         "outputs": outputs,
                     }
 
-                # Check the page after every successful action.
+                # Check the page after every
+                # successful action.
                 page_text = await self.surface.read_page()
 
                 # Expected business outcome:
@@ -139,7 +166,8 @@ class ReplayEngine:
                     }
 
                 # Expected business outcome:
-                # member exists but requested account does not.
+                # member exists but requested
+                # account does not.
                 if "Account Not Found" in page_text:
                     return {
                         "status": "business_outcome",
@@ -159,8 +187,11 @@ class ReplayEngine:
                     "outputs": outputs,
                 }
 
+        # Read the final page after all steps
+        # have completed.
         page_text = await self.surface.read_page()
 
+        # Validate the success checkpoint.
         checkpoint = artifact.get(
             "success_checkpoint"
         )
@@ -179,6 +210,8 @@ class ReplayEngine:
                     "outputs": outputs,
                 }
 
+        # Extract the account balance from
+        # the final Account Details page.
         balance = extract_balance(page_text)
 
         if balance is not None:
