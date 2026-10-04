@@ -1,0 +1,53 @@
+{
+  "schema_version": "1.0",
+  "capability_id": "get_account_balance",
+  "capability_version": "1.0",
+  "name": "Get Account Balance",
+  "description": "Find an account balance for a member.",
+  "inputs": {
+    "member_id": {
+      "type": "string",
+      "required": true
+    },
+    "account_type": {
+      "type": "string",
+      "required": true
+    }
+  },
+  "outputs": {
+    "balance": {
+      "type": "string"
+    }
+  },
+  "steps": [
+    {
+      "action": "open",
+      "target": "http://127.0.0.1:8000",
+      "value": null
+    },
+    {
+      "action": "fill",
+      "target": "Member ID",
+      "value": "{{member_id}}"
+    },
+    {
+      "action": "click",
+      "target": "Search Member",
+      "value": null
+    },
+    {
+      "action": "click",
+      "target": "Open Member",
+      "value": null
+    },
+    {
+      "action": "click",
+      "target": "{{account_type}}",
+      "value": null
+    }
+  ],
+  "success_checkpoint": {
+    "type": "text_present",
+    "value": "Account Details"
+  }
+}
