@@ -2,6 +2,7 @@ import pytest
 from playwright.async_api import async_playwright
 
 from automation.replay import ReplayEngine, load_artifact
+from automation.policy import SafetyPolicy, PolicyViolation
 
 
 ARTIFACT_PATH = "artifacts/discovered_account_balance.json"
@@ -11,10 +12,14 @@ async def run_replay(inputs):
     artifact = load_artifact(ARTIFACT_PATH)
 
     async with async_playwright() as playwright:
-        browser = await playwright.chromium.launch(headless=True)
+        browser = await playwright.chromium.launch(
+            headless=True
+        )
+
         page = await browser.new_page()
 
         engine = ReplayEngine(page)
+
         result = await engine.run(
             artifact=artifact,
             inputs=inputs,
@@ -62,3 +67,23 @@ async def test_member_not_found():
 
     assert result["status"] == "business_outcome"
     assert result["code"] == "MEMBER_NOT_FOUND"
+
+
+def test_policy_blocks_external_domain():
+    policy = SafetyPolicy()
+
+    with pytest.raises(PolicyViolation):
+        policy.validate_action(
+            action="open",
+            target="https://example.com",
+        )
+
+
+def test_policy_blocks_risky_action():
+    policy = SafetyPolicy()
+
+    with pytest.raises(PolicyViolation):
+        policy.validate_action(
+            action="click",
+            target="Transfer Funds",
+        )
