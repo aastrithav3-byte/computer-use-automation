@@ -10,6 +10,7 @@ from automation.policy import (
     PolicyViolation,
     redact,
 )
+from automation.handoff import HumanHandoff
 
 
 def load_artifact(path: str) -> dict[str, Any]:
@@ -76,21 +77,21 @@ class ReplayEngine:
     - enforces the safety policy
     - executes browser actions
     - detects business outcomes
-    - verifies the success checkpoint
-    - extracts declared outputs
+    - verifies success checkpoints
+    - extracts outputs
+    - escalates risky actions to a human
     """
 
     def __init__(
         self,
         page: Page,
         policy: SafetyPolicy | None = None,
+        handoff: HumanHandoff | None = None,
     ):
         self.page = page
         self.surface = BrowserSurface(page)
-
-        # Use the supplied policy or the default
-        # local-demo safety policy.
         self.policy = policy or SafetyPolicy()
+        self.handoff = handoff or HumanHandoff()
 
     async def run(
         self,
@@ -100,15 +101,26 @@ class ReplayEngine:
 
         outputs: dict[str, Any] = {}
 
+        capability = artifact.get(
+            "capability_id",
+            "unknown_capability",
+        )
+
+        goal = artifact.get(
+            "description",
+            "Execute saved capability",
+        )
+
         for step_number, step in enumerate(
             artifact["steps"],
             start=1,
         ):
             action = step["action"].lower()
 
+            target = None
+            value = None
+
             try:
-                # Resolve runtime parameters such as
-                # {{member_id}} and {{account_type}}.
                 target = substitute(
                     step.get("target"),
                     inputs,
@@ -119,19 +131,16 @@ class ReplayEngine:
                     inputs,
                 )
 
-                # Do not expose filled values in logs.
-                # A fill value may contain PII or other
-                # sensitive financial information.
-                if action == "fill":
-                    log_target = target
-                    log_value = redact(value)
+                # -----------------------------------
+                # SAFE LOGGING
+                # -----------------------------------
 
+                if action == "fill":
                     print(
                         f"[REPLAY] Step {step_number}: "
-                        f"{action} -> {log_target} "
-                        f"value={log_value}"
+                        f"{action} -> {target} "
+                        f"value={redact(value)}"
                     )
-
                 else:
                     print(
                         f"[REPLAY] Step {step_number}: "
@@ -141,15 +150,79 @@ class ReplayEngine:
                 # -----------------------------------
                 # SAFETY POLICY
                 # -----------------------------------
-                # Validate the action before touching
-                # the live application.
-                self.policy.validate_action(
-                    action=action,
-                    target=target,
-                )
+
+                try:
+                    self.policy.validate_action(
+                        action=action,
+                        target=target,
+                    )
+
+                except PolicyViolation as policy_error:
+
+                    # Risky actions are escalated to a
+                    # human instead of being executed
+                    # automatically.
+                    if (
+                        action == "click"
+                        and target
+                        and any(
+                            risky_term
+                            in target.lower()
+                            for risky_term
+                            in self.policy.risky_terms
+                        )
+                    ):
+                        handoff_result = (
+                            await self.handoff.request_intervention(
+                                page=self.page,
+                                capability=capability,
+                                goal=goal,
+                                step=step_number,
+                                reason=str(policy_error),
+                            )
+                        )
+
+                        if (
+                            handoff_result.get("status")
+                            != "resumed"
+                        ):
+                            return {
+                                "status": "failure",
+                                "reason": "human_handoff_failed",
+                                "step": step_number,
+                                "outputs": outputs,
+                            }
+
+                        # Human performed this risky step
+                        # manually in the same session.
+                        # Do NOT execute it automatically.
+                        print(
+                            f"[REPLAY] Step {step_number}: "
+                            "human completed risky action; "
+                            "automation resumed"
+                        )
+
+                        continue
+
+                    # Non-risk policy violations such as
+                    # navigating to an unapproved host
+                    # remain blocked.
+                    return {
+                        "status": "failure",
+                        "reason": "policy_violation",
+                        "step": step_number,
+                        "action": action,
+                        "target": (
+                            redact(target)
+                            if action == "fill"
+                            else target
+                        ),
+                        "error": str(policy_error),
+                        "outputs": outputs,
+                    }
 
                 # -----------------------------------
-                # EXECUTE ACTION
+                # EXECUTE SAFE ACTION
                 # -----------------------------------
 
                 if action == "open":
@@ -166,10 +239,6 @@ class ReplayEngine:
                         target
                     )
 
-                    # If the requested account type
-                    # does not exist for this member,
-                    # this is a legitimate business
-                    # outcome rather than a crash.
                     if not clicked:
                         if target == inputs.get(
                             "account_type"
@@ -181,9 +250,6 @@ class ReplayEngine:
                                 "outputs": outputs,
                             }
 
-                        # A different missing target
-                        # means the deterministic flow
-                        # could not continue.
                         return {
                             "status": "failure",
                             "reason": "target_not_found",
@@ -213,13 +279,11 @@ class ReplayEngine:
                     }
 
                 # -----------------------------------
-                # CHECK PAGE STATE
+                # CHECK BUSINESS OUTCOMES
                 # -----------------------------------
 
                 page_text = await self.surface.read_page()
 
-                # Expected business outcome:
-                # requested member does not exist.
                 if "Member Not Found" in page_text:
                     return {
                         "status": "business_outcome",
@@ -228,9 +292,6 @@ class ReplayEngine:
                         "outputs": outputs,
                     }
 
-                # Expected business outcome:
-                # member exists but requested
-                # account does not.
                 if "Account Not Found" in page_text:
                     return {
                         "status": "business_outcome",
@@ -238,29 +299,6 @@ class ReplayEngine:
                         "step": step_number,
                         "outputs": outputs,
                     }
-
-            # ---------------------------------------
-            # SAFETY FAILURE
-            # ---------------------------------------
-
-            except PolicyViolation as error:
-                return {
-                    "status": "failure",
-                    "reason": "policy_violation",
-                    "step": step_number,
-                    "action": action,
-                    "target": (
-                        redact(target)
-                        if action == "fill"
-                        else target
-                    ),
-                    "error": str(error),
-                    "outputs": outputs,
-                }
-
-            # ---------------------------------------
-            # TECHNICAL FAILURE
-            # ---------------------------------------
 
             except Exception as error:
                 return {
@@ -278,7 +316,7 @@ class ReplayEngine:
                 }
 
         # -------------------------------------------
-        # FINAL PAGE VALIDATION
+        # FINAL CHECKPOINT
         # -------------------------------------------
 
         page_text = await self.surface.read_page()
