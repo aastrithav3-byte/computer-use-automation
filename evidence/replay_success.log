@@ -1,0 +1,16 @@
+
+INPUTS USED FOR REPLAY:
+{'member_id': '12345', 'account_type': 'Checking'}
+
+GENERATED ARTIFACT FILL STEP:
+{'action': 'fill', 'target': 'Member ID', 'value': '{{member_id}}'}
+[REPLAY] Step 1: open -> http://127.0.0.1:8000
+[REPLAY] Step 2: fill -> Member ID value=[REDACTED]
+[REPLAY] Step 3: click -> Search Member
+[REPLAY] Step 4: click -> Open Member
+[REPLAY] Step 5: click -> Checking
+
+REPLAY RESULT:
+{'status': 'success', 'outputs': {'balance': '3120.25'}}
+
+Press Enter to close the browser...

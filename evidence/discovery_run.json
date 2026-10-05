@@ -1,0 +1,43 @@
+{
+  "goal": "Find the savings balance for member 12345.",
+  "discovery_type": "llm_driven",
+  "status": "success",
+  "steps": [
+    {
+      "step": 1,
+      "action": "fill",
+      "target": "Member ID",
+      "value": "12345",
+      "reason": "The member must be searched first."
+    },
+    {
+      "step": 2,
+      "action": "click",
+      "target": "Search Member",
+      "value": null,
+      "reason": "The member ID has already been entered."
+    },
+    {
+      "step": 3,
+      "action": "click",
+      "target": "Open Member",
+      "value": null,
+      "reason": "The correct member is visible, and opening the member record should show their savings balance."
+    },
+    {
+      "step": 4,
+      "action": "click",
+      "target": "Savings",
+      "value": null,
+      "reason": "The goal asks for the savings balance."
+    },
+    {
+      "step": 5,
+      "action": "done",
+      "target": null,
+      "value": null,
+      "reason": "The savings balance is visible: $5,240.00."
+    }
+  ],
+  "final_page_text": "Account Details\n\nMember: Maya Patel\n\nAccount Type: Savings\n\nAccount Number: SAV-1001\n\nCurrent Balance: $5,240.00\n\n\nBack to Member Details"
+}

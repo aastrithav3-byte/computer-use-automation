@@ -1,0 +1,15 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.14.7, pytest-9.1.1, pluggy-1.6.0 -- /Library/Frameworks/Python.framework/Versions/3.14/bin/python3
+cachedir: .pytest_cache
+rootdir: /Users/aastritha/Desktop/computer-use-automation/demo-app
+plugins: asyncio-1.4.0, anyio-4.15.1
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 5 items
+
+test_replay.py::test_successful_checking_account PASSED                  [ 20%]
+test_replay.py::test_account_not_found PASSED                            [ 40%]
+test_replay.py::test_member_not_found PASSED                             [ 60%]
+test_replay.py::test_policy_blocks_external_domain PASSED                [ 80%]
+test_replay.py::test_policy_blocks_risky_action PASSED                   [100%]
+
+============================== 5 passed in 1.28s ===============================
