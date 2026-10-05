@@ -22,21 +22,21 @@
       "action": "click",
       "target": "Open Member",
       "value": null,
-      "reason": "The correct member is visible, and opening the member record should show their savings balance."
+      "reason": "The correct member is visible, and the savings balance may be on their member details page."
     },
     {
       "step": 4,
       "action": "click",
       "target": "Savings",
       "value": null,
-      "reason": "The goal asks for the savings balance."
+      "reason": "The goal asks for the member\u2019s savings balance."
     },
     {
       "step": 5,
       "action": "done",
       "target": null,
       "value": null,
-      "reason": "The savings balance is visible: $5,240.00."
+      "reason": "The savings account balance is visible: $5,240.00."
     }
   ],
   "final_page_text": "Account Details\n\nMember: Maya Patel\n\nAccount Type: Savings\n\nAccount Number: SAV-1001\n\nCurrent Balance: $5,240.00\n\n\nBack to Member Details"
